@@ -1,1 +1,2 @@
-# Homework Repository of CPSC 8170 Physically Based Animation
+# Homework Repository of 
+     --CPSC 8170 Physically Based Animation
