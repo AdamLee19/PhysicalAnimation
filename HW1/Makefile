@@ -11,7 +11,7 @@ else
   endif
 endif
 
-PROJECT		= hw1
+PROJECT		= glsquare
 
 ${PROJECT}:	${PROJECT}.o
 	${CC} ${CFLAGS} -o ${PROJECT} ${PROJECT}.o ${LDFLAGS}
