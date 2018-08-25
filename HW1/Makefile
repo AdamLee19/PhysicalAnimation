@@ -1,5 +1,6 @@
 CC		= g++
 C		= cpp
+H       = h
 
 CFLAGS		= -g
 
@@ -11,13 +12,19 @@ else
   endif
 endif
 
+
+HFILES = ToolKit.${H}
+OFILES = ToolKit.o
 PROJECT		= hw1
 
-${PROJECT}:	${PROJECT}.o
-	${CC} ${CFLAGS} -o ${PROJECT} ${PROJECT}.o ${LDFLAGS}
+${PROJECT}:	${PROJECT}.o ${OFILES}
+	${CC} ${CFLAGS} -o ${PROJECT} ${PROJECT}.o ${OFILES} ${LDFLAGS}
 
-${PROJECT}.o:	${PROJECT}.${C}
+${PROJECT}.o: ${PROJECT}.${C} ${HFILES}
 	${CC} ${CFLAGS} -c ${PROJECT}.${C}
+
+ToolKit.o : ToolKit.${C} ToolKit.${H}
+	${CC} ${CFLAGS} -c ToolKit.${C}
 
 clean:
 	rm -f core.* *.o *~ ${PROJECT}
