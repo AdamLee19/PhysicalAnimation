@@ -1,3 +1,9 @@
+#ifdef __APPLE__
+#  include <GLUT/glut.h>
+#else
+#  include <GL/glut.h>
+#endif
+
 #ifndef _TOOL_KIT_H_
 #define _TOOL_KIT_H_
 
@@ -25,5 +31,6 @@ struct Face
 };
 
 bool load_obj_file( const char *file_name, Vertex *&point, Face *&face, int &point_count, int &face_count );
+
 
 #endif

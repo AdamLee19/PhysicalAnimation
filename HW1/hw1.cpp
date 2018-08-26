@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <iostream>
 #include "ToolKit.h"
+#include <iostream>
 
 #ifdef __APPLE__
 #  include <GLUT/glut.h>
@@ -28,6 +29,7 @@ static float WinWidth = WINDOW_WIDTH;
 static float WinHeight = WINDOW_HEIGHT;
 static int icolor = 0;
 
+float White[ ] = { 1., 1., 1., 1.};
 
 
 
@@ -68,6 +70,7 @@ int face_count;
 Vertex *point = NULL;
 Face *face = NULL;
 GLuint BoxList;
+GLuint Light0List;
 
 struct Vector3d
 {
@@ -85,7 +88,7 @@ const float g = -GRAVITY;
 
 
 static int frame = 24;
-static int TimeDelay = int ( 1. / 24. * 1000. ); 
+static int TimeDelay = int ( 1. / 25. * 1000. ); 
 
 
 
@@ -105,9 +108,62 @@ void doReshape();
 void InitList();
 void Animation();
 void Timer( int t );
-//void SetMaterial( float r, float g, float b, float shininess );
+void SetMaterial( float r, float g, float b, float shininess );
+void PointLight( int ilight, float x, float y, float z, float r, float g, float b );
 
 
+float *Array3( float a, float b, float c )
+{
+   float *array = new float [ 4 ];
+
+   array[ 0 ] = a;
+   array[ 1 ] = b;
+   array[ 2 ] = c;
+   array[ 3 ] = 1.;
+   return array;
+
+}
+float *MulArray3( float factor, float array0[3] )
+{
+    float *array = new float [ 4 ];
+
+    array[0] = factor * array0[0];
+    array[1] = factor * array0[1];
+    array[2] = factor * array0[2];
+    array[3] = 1.;
+    return array;
+}
+
+
+
+void PointLight( int ilight, float x, float y, float z, float r, float g, float b )
+{
+
+    glLightfv( ilight, GL_POSITION, Array3( x, y, z ) );
+    glLightfv( ilight, GL_AMBIENT, Array3( 0., 0., 0. ) );
+    glLightfv( ilight, GL_DIFFUSE, Array3( r, g, b ) );
+    glLightfv( ilight, GL_SPECULAR, Array3( r, g, b ) );
+    glLightf ( ilight, GL_CONSTANT_ATTENUATION, 1. );
+    glLightf ( ilight, GL_LINEAR_ATTENUATION, 0. );
+    glLightf ( ilight, GL_QUADRATIC_ATTENUATION, 0. );
+    glEnable( ilight );
+}
+
+
+void SetMaterial( float r, float g, float b, float shininess )
+{
+
+    glMaterialfv( GL_BACK, GL_EMISSION, Array3( 0., 0., 0. ) );
+    glMaterialfv( GL_BACK, GL_AMBIENT, MulArray3( .4f,  White) );
+    glMaterialfv( GL_BACK, GL_DIFFUSE, MulArray3( 1., White ) );
+    glMaterialfv( GL_BACK, GL_SPECULAR, Array3( 0., 0., 0. ) );
+    glMaterialf ( GL_BACK, GL_SHININESS, 2.f );
+    glMaterialfv( GL_FRONT, GL_EMISSION, Array3( 0., 0., 0. ) );
+    glMaterialfv( GL_FRONT, GL_AMBIENT, Array3( r, g, b ) );
+    glMaterialfv( GL_FRONT, GL_DIFFUSE, Array3( r, g, b ) );
+    glMaterialfv( GL_FRONT, GL_SPECULAR, MulArray3( .8f, White ) );
+    glMaterialf ( GL_FRONT, GL_SHININESS, shininess );
+}
 
 void InitGlut( )
 {
@@ -129,7 +185,7 @@ void InitGlut( )
   MainWindow = glutCreateWindow( WINDOWTITLE );
 
   // specify window clear (background) color to be opaque white
-  glClearColor( 1, 1, 1, 1 );
+  glClearColor( 0.6, 0.8, 0.7, 1. );
   
   
 
@@ -188,6 +244,9 @@ void display(){
   glEnable( GL_DEPTH_TEST ); //Active Depth
   glDepthFunc( GL_LESS );
 
+  //Specify shading model
+  glShadeModel( GL_FLAT );
+
   //Only Show BACK Face (So Cull Front). FRONT is count clock wise
   glEnable(GL_CULL_FACE);
   glCullFace(GL_FRONT);
@@ -224,8 +283,10 @@ void display(){
   //Animation();
    
     glPushMatrix();
-    glColor3f( Colors[ WHITE ][ 0 ], Colors[ WHITE ][ 1 ], Colors[ WHITE ][ 2 ] );
-    glTranslatef( ball.x, ball.y, ball.z );
+    //SetMaterial( 0.5, 0.5, 0.5, 1. );
+    glColor3f( 0.5, 0.5, 0.5 );
+    //glTranslatef( ball.x, ball.y, ball.z );
+    glTranslatef( 0., 200., 0. );
     glScalef( 15., 15., 15. );
     glBegin( GL_TRIANGLES );
       for (int i = 0; i < face_count; ++i)
@@ -239,6 +300,9 @@ void display(){
     glPopMatrix();
 
 
+   
+
+
 
 
   /****************************************************************/
@@ -247,10 +311,13 @@ void display(){
   
   
 
+  glEnable( GL_NORMALIZE );
 
+ 
   //Call the Box
+  glCallList( Light0List );
   glCallList( BoxList );
-  
+   
  
 
   // flush the OpenGL pipeline to the viewport
@@ -294,53 +361,190 @@ void InitList()
   BoxList = glGenLists( 1 );
   glNewList( BoxList, GL_COMPILE );
 
+  //Front Side
+  glPushMatrix();
   glBegin(GL_QUADS);
-    //Front Side
+    SetMaterial( Colors[ RED ][ 0 ], Colors[ RED ][ 1 ], Colors[ RED ][ 2 ], 1. );
     glColor3f( Colors[ RED ][ 0 ], Colors[ RED ][ 1 ], Colors[ RED ][ 2 ]);
+    glNormal3f( 0., 0., -1. );
     glVertex3f( -dx, -dy,  dz );
     glVertex3f(  dx, -dy,  dz );
     glVertex3f(  dx,  dy,  dz );
     glVertex3f( -dx,  dy,  dz );
 
-    //Back Side
+  glEnd();
+  glPopMatrix();
+
+  glPushMatrix();
+  glBegin(GL_QUADS);
+     //Back Side
+    SetMaterial( Colors[ YELLOW ][ 0 ], Colors[ YELLOW ][ 1 ], Colors[ YELLOW ][ 2 ], 1. );
     glColor3f( Colors[ YELLOW ][ 0 ], Colors[ YELLOW ][ 1 ], Colors[ YELLOW ][ 2 ]);
+    glNormal3f( 0., 0., 1. );
     glVertex3f( -dx, -dy, -dz );
     glVertex3f( -dx,  dy, -dz );
     glVertex3f(  dx , dy, -dz );
     glVertex3f(  dx, -dy, -dz );
+    
 
+  glEnd();
+  glPopMatrix();
+
+  glPushMatrix();
+  glBegin(GL_QUADS);
     //Left Side
+    SetMaterial( Colors[ GREEN ][ 0 ], Colors[ GREEN ][ 1 ], Colors[ GREEN ][ 2 ], 1. );
     glColor3f( Colors[ GREEN ][ 0 ], Colors[ GREEN ][ 1 ], Colors[ GREEN ][ 2 ]);
+    glNormal3f( 1., 0., 0. );
     glVertex3f( -dx, -dy,  dz );
     glVertex3f( -dx,  dy,  dz );
     glVertex3f( -dx,  dy, -dz );
     glVertex3f( -dx, -dy, -dz );
+    
+
+  glEnd();
+  glPopMatrix();
+
+
+  glPushMatrix();
+  glBegin(GL_QUADS);
+    //Right Side
+    SetMaterial( Colors[ CYAN ][ 0 ], Colors[ CYAN ][ 1 ], Colors[ CYAN ][ 2 ], 1. );
+    glColor3f( Colors[ CYAN ][ 0 ], Colors[ CYAN ][ 1 ], Colors[ CYAN ][ 2 ]);
+    glNormal3f( -1., 0., 0. );
+    glVertex3f(  dx, -dy,  dz );
+    glVertex3f(  dx, -dy, -dz );
+    glVertex3f(  dx,  dy, -dz );
+    glVertex3f(  dx,  dy,  dz );
+    
+
+  glEnd();
+  glPopMatrix();
+
+
+
+  glPushMatrix();
+  glBegin(GL_QUADS);
+    //Top Side
+    SetMaterial( Colors[ BLUE ][ 0 ], Colors[ BLUE ][ 1 ], Colors[ BLUE ][ 2 ], 1. );
+    glColor3f( Colors[ BLUE ][ 0 ], Colors[ BLUE ][ 1 ], Colors[ BLUE ][ 2 ]);
+    glNormal3f( 0., -1., 0. );
+    glVertex3f( -dx,  dy,  dz );
+    glVertex3f(  dx,  dy,  dz );
+    glVertex3f(  dx,  dy, -dz );
+    glVertex3f( -dx,  dy, -dz );
+    
+
+  glEnd();
+  glPopMatrix();
+
+
+  glPushMatrix();
+  glBegin(GL_QUADS);
+    //Top Side
+    glColor3f( Colors[ MAGENTA ][ 0 ], Colors[ MAGENTA ][ 1 ], Colors[ MAGENTA ][ 2 ]);
+    glNormal3f( 0., 1., 0. );
+    SetMaterial( Colors[ MAGENTA ][ 0 ], Colors[ MAGENTA ][ 1 ], Colors[ MAGENTA ][ 2 ], 1. );
+    glVertex3f( -dx, -dy,  dz );
+    glVertex3f( -dx, -dy, -dz );
+    glVertex3f(  dx, -dy, -dz );
+    glVertex3f(  dx, -dy,  dz );
+    
+
+  glEnd();
+  glPopMatrix();
+  /*
+  glPushMatrix();
+  glBegin(GL_QUADS);
+    //Front Side
+    glPushMatrix();
+    SetMaterial( Colors[ RED ][ 0 ], Colors[ RED ][ 1 ], Colors[ RED ][ 2 ], 1. );
+    glColor3f( Colors[ RED ][ 0 ], Colors[ RED ][ 1 ], Colors[ RED ][ 2 ]);
+    glNormal3f( 0., 0., -1. );
+    glVertex3f( -dx, -dy,  dz );
+    glVertex3f(  dx, -dy,  dz );
+    glVertex3f(  dx,  dy,  dz );
+    glVertex3f( -dx,  dy,  dz );
+    glPopMatrix();
+
+    //Back Side
+    glPushMatrix();
+    SetMaterial( Colors[ YELLOW ][ 0 ], Colors[ YELLOW ][ 1 ], Colors[ YELLOW ][ 2 ], 1. );
+    glColor3f( Colors[ YELLOW ][ 0 ], Colors[ YELLOW ][ 1 ], Colors[ YELLOW ][ 2 ]);
+    glNormal3f( 0., 0., 1. );
+    glVertex3f( -dx, -dy, -dz );
+    glVertex3f( -dx,  dy, -dz );
+    glVertex3f(  dx , dy, -dz );
+    glVertex3f(  dx, -dy, -dz );
+    glPopMatrix();
+
+    //Left Side
+    glPushMatrix();
+    SetMaterial( Colors[ GREEN ][ 0 ], Colors[ GREEN ][ 1 ], Colors[ GREEN ][ 2 ], 1. );
+    glColor3f( Colors[ GREEN ][ 0 ], Colors[ GREEN ][ 1 ], Colors[ GREEN ][ 2 ]);
+    glNormal3f( 1., 0., 0. );
+    glVertex3f( -dx, -dy,  dz );
+    glVertex3f( -dx,  dy,  dz );
+    glVertex3f( -dx,  dy, -dz );
+    glVertex3f( -dx, -dy, -dz );
+    glPopMatrix();
 
 
     //Right Side
+    glPushMatrix();
+
+    SetMaterial( Colors[ CYAN ][ 0 ], Colors[ CYAN ][ 1 ], Colors[ CYAN ][ 2 ], 1. );
     glColor3f( Colors[ CYAN ][ 0 ], Colors[ CYAN ][ 1 ], Colors[ CYAN ][ 2 ]);
+    glNormal3f( -1., 0., 0. );
     glVertex3f(  dx, -dy,  dz );
     glVertex3f(  dx, -dy, -dz );
     glVertex3f(  dx,  dy, -dz );
     glVertex3f(  dx,  dy,  dz );
+    glPopMatrix();
 
     //Top Side
+    glPushMatrix();
+    SetMaterial( Colors[ BLUE ][ 0 ], Colors[ BLUE ][ 1 ], Colors[ BLUE ][ 2 ], 1. );
     glColor3f( Colors[ BLUE ][ 0 ], Colors[ BLUE ][ 1 ], Colors[ BLUE ][ 2 ]);
+    glNormal3f( 0., -1., 0. );
     glVertex3f( -dx,  dy,  dz );
     glVertex3f(  dx,  dy,  dz );
     glVertex3f(  dx,  dy, -dz );
     glVertex3f( -dx,  dy, -dz );
+    glPopMatrix();
 
     //Bottom Side
+    glPushMatrix();
+   
     glColor3f( Colors[ MAGENTA ][ 0 ], Colors[ MAGENTA ][ 1 ], Colors[ MAGENTA ][ 2 ]);
+    glNormal3f( 0., 1., 0. );
+    SetMaterial( Colors[ MAGENTA ][ 0 ], Colors[ MAGENTA ][ 1 ], Colors[ MAGENTA ][ 2 ], 1. );
     glVertex3f( -dx, -dy,  dz );
     glVertex3f( -dx, -dy, -dz );
     glVertex3f(  dx, -dy, -dz );
     glVertex3f(  dx, -dy,  dz );
+    glPopMatrix();
 
 
   glEnd();
+  glPopMatrix();*/
   glEndList();
+
+   //Set the first light
+    
+  Light0List = glGenLists( 1 );
+  glNewList( Light0List, GL_COMPILE );
+
+  glPushMatrix();
+  glDisable(GL_LIGHTING);
+  PointLight(GL_LIGHT0, 0., 0., 0., 1.,1.,1.);
+  glEnable( GL_LIGHT0 );
+  glEnable(GL_LIGHTING);
+  
+  glPopMatrix();
+
+  glEndList();
+  
 
 }
 

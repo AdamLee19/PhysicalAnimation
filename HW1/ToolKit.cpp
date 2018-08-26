@@ -53,11 +53,11 @@ bool load_obj_file( const char *file_name, Vertex *&vp, Face *&face, int &point_
 		return false;
 	}
 
-	cout << "v_count:" << v_count << endl;
-	point_count = v_count;
-	cout << "vt_count:" << vt_count << endl;
-	cout << "vn_count:" << vn_count << endl;
-	cout << "f_count:" << f_count << endl;
+	// cout << "v_count:" << v_count << endl;
+	// point_count = v_count;
+	// cout << "vt_count:" << vt_count << endl;
+	// cout << "vn_count:" << vn_count << endl;
+	// cout << "f_count:" << f_count << endl;
 	face_count = f_count;
 
 	
@@ -115,3 +115,7 @@ bool load_obj_file( const char *file_name, Vertex *&vp, Face *&face, int &point_
 	fclose( fp );
 	return true;
 }
+
+
+
+
